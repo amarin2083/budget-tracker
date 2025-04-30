@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>แอปติดตามงบประมาณ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --primary: #2d89ef;
+      --accent: #f9a825;
+      --bg: #f5f6fa;
+      --card: #fff;
+      --text: #222;
+      --border: #e0e0e0;
+      --radius: 18px;
+      --shadow: 0 2px 16px 0 rgba(44,62,80,0.07);
+    }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Prompt', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 2rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 2rem 0 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    nav a {
+      color: var(--primary);
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 0.5rem 1.2rem;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background 0.2s, color 0.2s;
+      border: 1px solid transparent;
+    }
+    nav a.active, nav a:hover {
+      background: var(--primary);
+      color: #fff;
+      border: 1px solid var(--primary);
+    }
+    main {
+      max-width: 480px;
+      margin: 0 auto 2rem auto;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2rem 1.5rem 2.5rem 1.5rem;
+    }
+    section { display: none; }
+    section.active { display: block; }
+    .summary {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .summary-card {
+      flex: 1 1 120px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 1px 4px 0 rgba(44,62,80,0.04);
+      margin-bottom: 0.5rem;
+    }
+    .summary-card span {
+      display: block;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 0.3rem;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.2rem;
+    }
+    input, select, button {
+      font-size: 1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 0.6rem 0.9rem;
+      outline: none;
+      background: #fafbfc;
+      transition: border 0.2s;
+    }
+    input:focus, select:focus {
+      border: 1.5px solid var(--primary);
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: var(--accent);
+      color: #222;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1rem 0;
+    }
+    li {
+      background: var(--bg);
+      border-radius: var(--radius);
+      margin-bottom: 0.5rem;
+      padding: 0.7rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 4px 0 rgba(44,62,80,0.04);
+    }
+    .delete-btn {
+      color: #e74c3c;
+      background: none;
+      border: none;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-left: 1rem;
+      transition: color 0.2s;
+    }
+    .delete-btn:hover {
+      color: #c0392b;
+    }
+    canvas {
+      max-width: 100%;
+      margin: 1rem 0;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: 0 1px 4px 0 rgba(44,62,80,0.04);
+    }
+    .center { text-align: center; }
+    @media (max-width: 600px) {
+      main { padding: 1rem 0.3rem; }
+      .summary { flex-direction: column; gap: 0.5rem; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>แอปติดตามงบประมาณ</h1>
+  <nav>
+    <a href="#" id="nav-home" class="active">หน้าหลัก</a>
+    <a href="#" id="nav-add">เพิ่มรายการ</a>
+    <a href="#" id="nav-goals">เป้าหมาย</a>
+    <a href="#" id="nav-tax">คำนวณภาษี</a>
+    <a href="#" id="nav-reports">รายงาน</a>
+    <a href="#" id="nav-graphs">กราฟ</a>
+    <a href="#" id="nav-alerts">แจ้งเตือน</a>
+  </nav>
+  <main>
+    <!-- 1. หน้าหลัก -->
+    <section id="home" class="active">
+      <div class="summary">
+        <div class="summary-card">
+          <div>รายรับ</div>
+          <span id="sum-income">0</span> บาท
+        </div>
+        <div class="summary-card">
+          <div>รายจ่าย</div>
+          <span id="sum-expense">0</span> บาท
+        </div>
+        <div class="summary-card">
+          <div>คงเหลือ</div>
+          <span id="balance">0</span> บาท
+        </div>
+      </div>
+      <canvas id="expense-pie" height="180"></canvas>
+      <div class="center">
+        <button onclick="showSection('add')">+ เพิ่มรายการ</button>
+        <button onclick="downloadCSV()">ดาวน์โหลดรายงาน (CSV)</button>
+      </div>
+    </section>
+
+    <!-- 2. หน้าเพิ่มรายการ -->
+    <section id="add">
+      <h2 class="center">เพิ่มรายการ</h2>
+      <form id="add-form">
+        <label>จำนวนเงิน
+          <input type="number" name="amount" required min="1">
+        </label>
+        <label>หมวดหมู่
+          <select name="category" required>
+            <option value="">เลือกหมวดหมู่</option>
+            <option value="รายรับ">รายรับ</option>
+            <option value="ค่าอาหาร">ค่าอาหาร</option>
+            <option value="ค่าสาธารณูปโภค">ค่าสาธารณูปโภค</option>
+            <option value="เดินทาง">เดินทาง</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
+        </label>
+        <label>ชื่อรายการ
+          <input type="text" name="description" required>
+        </label>
+        <label>วันที่
+          <input type="date" name="date" required>
+        </label>
+        <button type="submit">บันทึก</button>
+      </form>
+      <div class="center">
+        <button onclick="showSection('home')">กลับหน้าหลัก</button>
+      </div>
+    </section>
+
+    <!-- 3. หน้าเป้าหมายการออม -->
+    <section id="goals">
+      <h2 class="center">เป้าหมายการออม</h2>
+      <form id="goal-form">
+        <label>ชื่อเป้าหมาย
+          <input type="text" name="goal_description" required>
+        </label>
+        <label>จำนวนเงินเป้าหมาย
+          <input type="number" name="target_amount" required>
+        </label>
+        <label>เงินที่ออมปัจจุบัน
+          <input type="number" name="current_savings" required>
+        </label>
+        <label>ระยะเวลา (เดือน)
+          <input type="number" name="months" required>
+        </label>
+        <button type="submit">ตั้งเป้าหมาย</button>
+      </form>
+      <div id="goal-progress" class="center"></div>
+      <canvas id="goal-chart" height="120"></canvas>
+      <div class="center">
+        <button onclick="showSection('home')">กลับหน้าหลัก</button>
+      </div>
+    </section>
+
+    <!-- 4. หน้าคำนวณภาษี -->
+    <section id="tax">
+      <h2 class="center">คำนวณภาษี</h2>
+      <form id="tax-form">
+        <label>รายได้ต่อปี (บาท)
+          <input type="number" name="income" required>
+        </label>
+        <button type="submit">คำนวณภาษี</button>
+      </form>
+      <div id="tax-result" class="center"></div>
+      <div class="center">
+        <button onclick="showSection('home')">กลับหน้าหลัก</button>
+      </div>
+    </section>
+
+    <!-- 5. หน้ารายงาน -->
+    <section id="reports">
+      <h2 class="center">รายงานการเงิน</h2>
+      <div id="report-detail"></div>
+      <div class="center">
+        <button onclick="downloadCSV()">ดาวน์โหลดรายงาน (CSV)</button>
+        <button onclick="showSection('home')">กลับหน้าหลัก</button>
+      </div>
+    </section>
+
+    <!-- 6. หน้ากราฟการใช้จ่าย -->
+    <section id="graphs">
+      <h2 class="center">กราฟการใช้จ่าย</h2>
+      <canvas id="bar-chart" height="120"></canvas>
+      <canvas id="line-chart" height="120"></canvas>
+      <div class="center">
+        <button onclick="showSection('home')">กลับหน้าหลัก</button>
+      </div>
+    </section>
+
+    <!-- 7. หน้าแจ้งเตือน -->
+    <section id="alerts">
+      <h2 class="center">แจ้งเตือน</h2>
+      <div id="alert-list"></div>
+      <div class="center">
+        <button onclick="showSection('home')">กลับหน้าหลัก</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    // --------- SPA Navigation ---------
+    function showSection(id) {
+      document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+      document.getElementById('nav-' + id).classList.add('active');
+      if (id === 'home') loadSummary();
+      if (id === 'goals') loadGoals();
+      if (id === 'reports') loadReportDetail();
+      if (id === 'graphs') loadGraphs();
+      if (id === 'alerts') loadAlerts();
+    }
+    document.getElementById('nav-home').onclick = () => showSection('home');
+    document.getElementById('nav-add').onclick = () => showSection('add');
+    document.getElementById('nav-goals').onclick = () => showSection('goals');
+    document.getElementById('nav-tax').onclick = () => showSection('tax');
+    document.getElementById('nav-reports').onclick = () => showSection('reports');
+    document.getElementById('nav-graphs').onclick = () => showSection('graphs');
+    document.getElementById('nav-alerts').onclick = () => showSection('alerts');
+
+    // --------- Mock Data ---------
+    let incomes = [];
+    let expenses = [];
+    let goals = [];
+
+    // --------- Home Summary ---------
+    function loadSummary() {
+      fetch('/income').then(res => res.json()).then(data => {
+        incomes = data;
+        document.getElementById('sum-income').textContent = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+        updateBalance();
+        drawExpensePie();
+      });
+      fetch('/expenses').then(res => res.json()).then(data => {
+        expenses = data;
+        document.getElementById('sum-expense').textContent = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+        updateBalance();
+        drawExpensePie();
+      });
+    }
+    function updateBalance() {
+      const income = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+      const expense = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      document.getElementById('balance').textContent = (income - expense);
+    }
+    // --------- Pie Chart ---------
+    let pieChart;
+    function drawExpensePie() {
+      const ctx = document.getElementById('expense-pie').getContext('2d');
+      const categories = {};
+      expenses.forEach(e => {
+        categories[e.category] = (categories[e.category] || 0) + Number(e.amount);
+      });
+      if (pieChart) pieChart.destroy();
+      pieChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(categories),
+          datasets: [{
+            data: Object.values(categories),
+            backgroundColor: ['#f9a825', '#2d89ef', '#27ae60', '#8e44ad', '#c0392b']
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+    // --------- Add Income/Expense ---------
+    document.getElementById('add-form').onsubmit = function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        user_id: 1,
+        amount: form.amount.value,
+        category: form.category.value,
+        description: form.description.value,
+        date: form.date.value
+      };
+      if (data.category === 'รายรับ') {
+        fetch('/income', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+          .then(() => { form.reset(); showSection('home'); });
+      } else {
+        fetch('/expenses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+          .then(() => { form.reset(); showSection('home'); });
+      }
+    };
+
+    // --------- Goals ---------
+    function loadGoals() {
+      fetch('/goals').then(res => res.json()).then(data => {
+        goals = data;
+        if (goals.length > 0) {
+          const g = goals[0];
+          const months = g.months || 12;
+          const need = g.target_amount - g.current_savings;
+          const perMonth = (need / months).toFixed(2);
+          document.getElementById('goal-progress').innerHTML =
+            `<div>เป้าหมาย: ${g.goal_description} <br> ต้องออมเดือนละ <b>${perMonth}</b> บาท (${months} เดือน)</div>`;
+          drawGoalChart(g.current_savings, g.target_amount);
+        } else {
+          document.getElementById('goal-progress').innerHTML = 'ยังไม่มีเป้าหมาย';
+        }
+      });
+    }
+    document.getElementById('goal-form').onsubmit = function(e) {
+      e.preventDefault();
+      const form = e.target;
+      fetch('/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: 1,
+          goal_description: form.goal_description.value,
+          target_amount: form.target_amount.value,
+          current_savings: form.current_savings.value,
+          months: form.months.value
+        })
+      }).then(() => {
+        form.reset();
+        loadGoals();
+      });
+    };
+    let goalChart;
+    function drawGoalChart(current, target) {
+      const ctx = document.getElementById('goal-chart').getContext('2d');
+      if (goalChart) goalChart.destroy();
+      goalChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['ออมแล้ว', 'เป้าหมาย'],
+          datasets: [{
+            data: [current, target],
+            backgroundColor: ['#27ae60', '#f9a825']
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // --------- Tax Calculation ---------
+    document.getElementById('tax-form').onsubmit = function(e) {
+      e.preventDefault();
+      const income = Number(e.target.income.value);
+      let tax = 0;
+      if (income <= 150000) tax = 0;
+      else if (income <= 300000) tax = (income - 150000) * 0.05;
+      else if (income <= 500000) tax = 7500 + (income - 300000) * 0.1;
+      else if (income <= 750000) tax = 27500 + (income - 500000) * 0.15;
+      else if (income <= 1000000) tax = 65000 + (income - 750000) * 0.2;
+      else if (income <= 2000000) tax = 115000 + (income - 1000000) * 0.25;
+      else if (income <= 5000000) tax = 365000 + (income - 2000000) * 0.3;
+      else tax = 1265000 + (income - 5000000) * 0.35;
+      document.getElementById('tax-result').innerHTML = `ภาษีที่ต้องจ่าย: <b>${tax.toLocaleString()} บาท</b>`;
+    };
+
+    // --------- Reports ---------
+    function loadReportDetail() {
+      let html = '<h3>รายงานการใช้จ่าย</h3><ul>';
+      expenses.forEach(e => {
+        html += `<li>${e.date} - ${e.category}: ${e.amount} บาท (${e.description})</li>`;
+      });
+      html += '</ul><h3>รายงานการออม</h3><ul>';
+      goals.forEach(g => {
+        html += `<li>${g.goal_description}: ออมแล้ว ${g.current_savings} บาท จากเป้าหมาย ${g.target_amount} บาท</li>`;
+      });
+      html += '</ul>';
+      document.getElementById('report-detail').innerHTML = html;
+    }
+
+    // --------- Download CSV ---------
+    function downloadCSV() {
+      let csv = 'วันที่,ประเภท,หมวดหมู่,จำนวนเงิน,รายละเอียด\n';
+      incomes.forEach(i => {
+        csv += `${i.date},รายรับ,${i.source},${i.amount},\n`;
+      });
+      expenses.forEach(e => {
+        csv += `${e.date},รายจ่าย,${e.category},${e.amount},${e.description}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'budget-report.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // --------- Graphs ---------
+    let barChart, lineChart;
+    function loadGraphs() {
+      // Bar Chart
+      const ctxBar = document.getElementById('bar-chart').getContext('2d');
+      const cat = {};
+      expenses.forEach(e => { cat[e.category] = (cat[e.category] || 0) + Number(e.amount); });
+      if (barChart) barChart.destroy();
+      barChart = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(cat),
+          datasets: [{ label: 'รายจ่าย', data: Object.values(cat), backgroundColor: '#f9a825' }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+      // Line Chart
+      const ctxLine = document.getElementById('line-chart').getContext('2d');
+      const byDate = {};
+      expenses.forEach(e => { byDate[e.date] = (byDate[e.date] || 0) + Number(e.amount); });
+      if (lineChart) lineChart.destroy();
+      lineChart = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: Object.keys(byDate),
+          datasets: [{ label: 'รายจ่ายรายวัน', data: Object.values(byDate), borderColor: '#2d89ef', fill: false }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // --------- Alerts ---------
+    function loadAlerts() {
+      let html = '';
+      // ตัวอย่าง: แจ้งเตือนถ้าใช้จ่ายหมวดหมู่ใดเกิน 5000 บาท
+      const cat = {};
+      expenses.forEach(e => { cat[e.category] = (cat[e.category] || 0) + Number(e.amount); });
+      for (const k in cat) {
+        if (cat[k] > 5000) html += `<div>แจ้งเตือน: ใช้จ่ายหมวด "${k}" เกิน 5,000 บาท!</div>`;
+      }
+      // ตัวอย่าง: แจ้งเตือนภาษี (สมมติวันนี้เป็นวันใกล้ครบกำหนด)
+      html += `<div>แจ้งเตือน: ใกล้ถึงวันจ่ายภาษี!</div>`;
+      document.getElementById('alert-list').innerHTML = html || 'ไม่มีการแจ้งเตือน';
+    }
+
+    // --------- Initial Load ---------
+    loadSummary();
+  </script>
+</body>
+</html>
